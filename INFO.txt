@@ -1,0 +1,7 @@
+https://www.python.org/downloads/windows/ poner en el path
+
+-Monitor -->
+py -m pip install PyQt6
+py -m pip install pyserial
+
+-Ejecutable --> C:\Users\Eduar\Desktop\toolsSTM32>C:\Users\Eduar\AppData\Local\Programs\Python\Python313\Scripts\pyinstaller.exe --onefile --windowed --name MonitorUART monitor_uart.py
