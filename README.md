@@ -35,9 +35,23 @@ No necesitas tener Python ni ninguna librería instalada para usar la aplicació
 
 ## 🛠️ Instalación para Desarrolladores
 
-Si deseas ejecutar o modificar el código fuente desde tu entorno local:
+### 1. Desde el Ejecutable (Windows)
+Descarga la última versión empaquetada directamente desde la sección de [Releases](../../releases).
 
-### 1. Clonar el repositorio
+### 2. Ejecutar desde el código fuente
+
 ```bash
+# Clonar el repositorio
 git clone [https://github.com/TU_USUARIO/MonitorUART.git](https://github.com/TU_USUARIO/MonitorUART.git)
 cd MonitorUART
+
+# Crear y activar entorno virtual
+python -m venv venv
+# En Windows:
+venv\Scripts\activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Ejecutar la aplicación
+python main.py
