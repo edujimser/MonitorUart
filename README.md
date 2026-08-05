@@ -11,7 +11,6 @@
 
 ## 📸 Captura de Pantalla
 
-> *(Añade aquí una captura de pantalla de la aplicación)*
 > ![MonitorUART Interface](docs/screenshot.png)
 
 ---
