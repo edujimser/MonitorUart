@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['monitor_uart.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('gui/panels/ConsolaStyle.qss', 'gui/panels'), ('gui/style/ElegantDark.qss', 'gui/style'), ('config/serial_config.json', 'config')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

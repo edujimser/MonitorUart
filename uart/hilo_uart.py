@@ -14,17 +14,23 @@ class HiloUART(QThread):
             self.running = True
 
     def run(self):
+        # Garantizar que self.ser existe siempre
+        self.ser = None
+
         try:
             self.ser = serial.Serial(self.puerto, self.baudrate, timeout=0.1)
             self.nuevaLinea.emit(f"[INFO] Conectado a {self.puerto}\n")
-        except:
-            self.nuevaLinea.emit("[ERROR TX] No se pudo abrir el puerto\n")
+        except Exception as e:
+            self.nuevaLinea.emit(f"[ERROR TX] No se pudo abrir el puerto: {e}\n")
+            self.ser = None
             return
 
         while self.running:
-            if not self.ser.is_open:
+            # Si el puerto se cerró externamente
+            if not self.ser or not self.ser.is_open:
                 self.nuevaLinea.emit("[ERROR TX] Puerto cerrado\n")
                 break
+
             try:
                 if self.ser.in_waiting:
                     raw = self.ser.read(self.ser.in_waiting)
@@ -33,23 +39,40 @@ class HiloUART(QThread):
                         data = raw.decode("utf-8")
                     except UnicodeDecodeError:
                         data = raw.decode("latin1")
-                    
-                    # Emitir la línea recibida al hilo principal
+
                     self.nuevaLinea.emit("[RX]")
                     self.nuevaLinea.emit(data)
-                    
-                time.sleep(0.001)
 
-            except:
-                self.nuevaLinea.emit("[ERROR TX] Conexión perdida\n")
+                time.sleep(0.001)
+            
+            except Exception as e:
+                # Verificar si es un error de acceso denegado (PermissionError / Error 13)
+                if isinstance(e, PermissionError) or "PermissionError" in str(e) or "Acceso denegado" in str(e):
+                    mensaje_usuario = "[ERROR TX] Haga clic en 'Desconectar' en la aplicación y luego desconecte y vuelva a conectar el equipo.\n"
+                else:
+                    # Para cualquier otro error genérico, mantiene el detalle técnico original
+                    mensaje_usuario = f"[ERROR TX] Conexión perdida: {e}\n"
+
+                self.nuevaLinea.emit(mensaje_usuario)
                 break
 
-        self.ser.close()
+        # Cierre seguro del puerto
+        try:
+            if self.ser and self.ser.is_open:
+                self.ser.close()
+        except Exception as e:
+            self.nuevaLinea.emit(f"[ERROR TX] Error al cerrar el puerto: {e}\n")
 
 
     def detener(self):
-         if  self.ser.is_open: 
-             self.running = False
+        self.running = False
+
+        try:
+            if self.ser and hasattr(self.ser, "is_open") and self.ser.is_open:
+                self.ser.close()
+        except Exception as e:
+            print(f"Error al cerrar el puerto: {e}")
+
     
     
     def enviar_datos(self, datos):

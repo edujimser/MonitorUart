@@ -8,36 +8,34 @@ from gui.panels.Consola import Consola
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QTextCursor
 import serial.tools.list_ports
+import time
 from uart.hilo_uart import HiloUART 
 import json
-import os
+import sys, os
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 class VentanaPrincipal(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        #Aplicar estilo
-        self.aplicarEstilo()
-        
-        #Aplicar título y tamaño de la ventana
-        self.setWindowTitle("Monitor UART STM32 v1.0.1")
+        # Aplicar título y tamaño de la ventana
+        self.setWindowTitle("Monitor UART STM32 v1.0.2")
         self.resize(1000, 700)
 
         # Inicializar variables 
         self.grabando = False
         self.archivo_grabacion = None
-        
-        # Timer para refrescar puertos
-        self.timerPuertos = QTimer()
-        self.timerPuertos.timeout.connect(self.actualizarPuertos)
-        self.timerPuertos.start(1000)
+        self.hilo = None
 
         # ---------------------------
         # Menú superior estilo Windows
         # ---------------------------
         menuSuperior = MenuSuperiorA(self)
         self.setMenuBar(menuSuperior)
-
         menuSuperior.accionGuardar.triggered.connect(self.guardarLog)
         menuSuperior.accionSalir.triggered.connect(self.close)
 
@@ -49,36 +47,31 @@ class VentanaPrincipal(QMainWindow):
         central.setLayout(layout)
         self.setCentralWidget(central)
 
-        # ---------------------------
         # Consola 
-        # ---------------------------
         self.consola = Consola(self)
 
-        # ---------------------------------------------------------------------------------
+        # ---------------------------
         # Panel lateral 
-        # ---------------------------------------------------------------------------------
+        # ---------------------------
         panel = QVBoxLayout()
         ancho = 180
         
-        ruta = os.path.join("config", "serial_config.json")
-        with open(ruta, "r") as f:
-            cfg = json.load(f)
+        # Carga de configuración JSON
+        ruta = resource_path(os.path.join("config", "serial_config.json"))
+        cfg = {"baudrates": [9600, 115200], "bytesizes": [8], "parities": ["N"]}
+        if os.path.exists(ruta):
+            with open(ruta, "r") as f:
+                cfg = json.load(f)
     
         # Combo de puertos
         self.comboPuerto = QComboBox()
         self.comboPuerto.setFixedWidth(ancho)
-        for p in serial.tools.list_ports.comports():
-            self.comboPuerto.addItem(p.device)
+        self.comboPuerto.currentIndexChanged.connect(self.dataPuertos)
         
         # Combo de baudrate
         self.comboBaud = QComboBox()
         self.comboBaud.setFixedWidth(ancho)
         self.comboBaud.addItems([str(b) for b in cfg["baudrates"]])
-
-        view = self.comboBaud.view()
-        view.setSpacing(0)
-        view.setUniformItemSizes(True)
-        view.setStyleSheet("QListView::item { height: 18px; }")
 
         # Combo de bytesize
         self.bytesize = QComboBox()
@@ -111,12 +104,9 @@ class VentanaPrincipal(QMainWindow):
         
         self.input_tx = QLineEdit()
         self.input_tx.setPlaceholderText("Escribe datos para enviar...")
-        layout_tx = QHBoxLayout()
-        layout_tx.addWidget(self.input_tx)
         self.btn_enviar = QPushButton("Enviar")
         self.btn_enviar.setFixedWidth(ancho)
         self.btn_enviar.clicked.connect(self.enviar_uart)
-        layout_tx.addWidget(self.btn_enviar)
 
         panel.addWidget(QLabel("Puerto"))
         panel.addWidget(self.comboPuerto)
@@ -126,18 +116,19 @@ class VentanaPrincipal(QMainWindow):
         panel.addWidget(self.bytesize)
         panel.addWidget(self.btnConectar)
         panel.addWidget(self.btnDesconectar)
-        panel.addSpacing(20)
+        panel.addSpacing(15)
         panel.addWidget(QLabel("Grabación"))
         panel.addWidget(self.btnIniciarGrabacion)
         panel.addWidget(self.btnDetenerGrabacion)
-        panel.addSpacing(20)
+        panel.addSpacing(15)
         panel.addWidget(QLabel("Enviar datos"))
         panel.addWidget(self.input_tx)
         panel.addWidget(self.btn_enviar)
+
         # ---------------------------
         # LEDs horizontales
         # ---------------------------
-        panel.addSpacing(20)
+        panel.addSpacing(15)
         panel.addWidget(QLabel("Indicadores"))
 
         ledLayout = QHBoxLayout()
@@ -145,7 +136,8 @@ class VentanaPrincipal(QMainWindow):
         ledLayout.addWidget(QLabel("RX"))
         self.ledRX = QLabel()
         self.ledRX.setFixedSize(18, 18)
-        self.ledRX.setStyleSheet("background-color: #444; border-radius: 9px;")
+        self.ledRX.setObjectName("ledRX")
+        self.ledRX.setProperty("rx", "off") # Estado inicial
         ledLayout.addWidget(self.ledRX)
 
         ledLayout.addSpacing(10)
@@ -153,7 +145,8 @@ class VentanaPrincipal(QMainWindow):
         ledLayout.addWidget(QLabel("Estado"))
         self.ledEstado = QLabel()
         self.ledEstado.setFixedSize(18, 18)
-        self.ledEstado.setStyleSheet("background-color: red; border-radius: 9px;")
+        self.ledEstado.setObjectName("ledEstado")
+        self.ledEstado.setProperty("estado", "desconectado") # Estado inicial
         ledLayout.addWidget(self.ledEstado)
 
         panel.addLayout(ledLayout)
@@ -161,31 +154,24 @@ class VentanaPrincipal(QMainWindow):
         # ---------------------------
         # Información del puerto
         # ---------------------------
-        panel.addSpacing(20)
+        panel.addSpacing(15)
         panel.addWidget(QLabel("Información del puerto"))
 
         infoLayout = QVBoxLayout()
-
         self.infoDescripcion = QLabel("Descripción: -")
         self.infoFabricante = QLabel("Fabricante: -")
         self.infoProducto = QLabel("Producto: -")
         self.infoSerial = QLabel("Número de serie: -")
         self.infoHWID = QLabel("HWID: -")
 
-        for lbl in [
-            self.infoDescripcion, self.infoFabricante,
-            self.infoProducto, self.infoSerial, self.infoHWID
-        ]:
-            lbl.setStyleSheet("font-size: 10pt; color: #ccc;")
+        for lbl in [self.infoDescripcion, self.infoFabricante, self.infoProducto, self.infoSerial, self.infoHWID]:
+            lbl.setObjectName("infoLabel")
             lbl.setWordWrap(True)
             infoLayout.addWidget(lbl)
 
         panel.addLayout(infoLayout)
-        self.dataPuertos()
         
-        # ---------------------------
-        # Panel lateral con ancho fijo
-        # ---------------------------
+        # Panel lateral widget container
         panelWidget = QWidget()
         panelWidget.setLayout(panel)
         panelWidget.setFixedWidth(220)
@@ -200,22 +186,31 @@ class VentanaPrincipal(QMainWindow):
         self.setStatusBar(self.status)
         self.status.showMessage("Desconectado")
 
-        self.hilo = None
-    
-    # ============================================================
-    # Aplicar estilo
-    # ============================================================
+        # Timer para refrescar puertos
+        self.actualizarPuertos()
+        self.timerPuertos = QTimer()
+        self.timerPuertos.timeout.connect(self.actualizarPuertos)
+        self.timerPuertos.start(1000)
+
+        # Aplicar estilo al final de construir la UI
+        self.aplicarEstilo()
+
+    # Función auxiliar para refrescar el estilo dinámico de un widget
+    def _refrescarEstiloWidget(self, widget):
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
+
     def aplicarEstilo(self):
-        with open("gui/style/ElegantDark.qss", "r") as f:
-            estilo = f.read()
-            
-        self.setStyleSheet(estilo)
-    # ============================================================
-    # Información del puerto seleccionado
-    # ============================================================
+        ruta_qss = resource_path("gui/style/ElegantDark.qss")
+        try:
+            with open(ruta_qss, "r", encoding="utf-8") as f:
+                estilo = f.read()
+            self.setStyleSheet(estilo)
+        except Exception as e:
+            print(f"[ERROR] No se pudo aplicar el estilo: {e}")
+
     def dataPuertos(self):
         puerto = self.comboPuerto.currentText()
-
         if not puerto:
             return
 
@@ -228,101 +223,85 @@ class VentanaPrincipal(QMainWindow):
                 self.infoHWID.setText(f"HWID: {p.hwid or 'No disponible'}")
                 return
 
-
-    # ============================================================
-    # Actualizar lista de puertos
-    # ============================================================
     def actualizarPuertos(self):
         puertos_actuales = [p.device for p in serial.tools.list_ports.comports()]
         puertos_combo = [self.comboPuerto.itemText(i) for i in range(self.comboPuerto.count())]
 
         if puertos_actuales != puertos_combo:
             self.comboPuerto.clear()
-
             for p in puertos_actuales:
                 self.comboPuerto.addItem(p)
-
             if puertos_actuales:
-                self.comboPuerto.setCurrentIndex(0)
                 self.dataPuertos()
 
-
-    # ============================================================
-    # Conectar
-    # ============================================================
     def conectar(self):
         puerto = self.comboPuerto.currentText()
+        if not puerto:
+            QMessageBox.warning(self, "Error", "No se ha seleccionado ningún puerto COM.")
+            return
+
         baud = int(self.comboBaud.currentText())
         bytesize = int(self.bytesize.currentText())
 
-        self.hilo = HiloUART(puerto, baud, bytesize)
-        self.hilo.nuevaLinea.connect(self.mostrarTexto)
-        self.hilo.start()
+        try:
+            self.hilo = HiloUART(puerto, baud, bytesize)
+            self.hilo.nuevaLinea.connect(self.mostrarTexto)
+            self.hilo.start()
 
-        self.ledEstado.setStyleSheet("background-color: green; border-radius: 9px;")
-        self.status.showMessage(f"Conectado a {puerto}")
+            # Cambiar propiedad dinamica en lugar de objectName
+            self.ledEstado.setProperty("estado", "conectado")
+            self._refrescarEstiloWidget(self.ledEstado)
+            self.status.showMessage(f"Conectado a {puerto}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error de Conexión", str(e))
 
-
-    # ============================================================
-    # Desconectar
-    # ============================================================
     def desconectar(self):
         if self.hilo:
-            self.hilo.detener()
-            self.hilo.wait()
+            try:
+                self.hilo.detener()
+                self.hilo.wait()
+            except Exception as e:
+                print(f"Error al detener el hilo: {e}")
             self.hilo = None
 
-        self.ledEstado.setStyleSheet("background-color: red; border-radius: 9px;")
+        self.ledEstado.setProperty("estado", "desconectado")
+        self._refrescarEstiloWidget(self.ledEstado)
         self.status.showMessage("Desconectado")
 
-
-    # ============================================================
-    # Mostrar texto recibido
-    # ============================================================
     def mostrarTexto(self, texto):
-
-        # LED RX parpadeo
         if texto == "[RX]":
-            self.ledRX.setStyleSheet("background-color: yellow; border-radius: 9px;")
-            QTimer.singleShot(120, lambda: self.ledRX.setStyleSheet("background-color: #444; border-radius: 9px;"))
+            self.ledRX.setProperty("rx", "on")
+            self._refrescarEstiloWidget(self.ledRX)
+
+            QTimer.singleShot(120, lambda: (
+                self.ledRX.setProperty("rx", "off"),
+                self._refrescarEstiloWidget(self.ledRX)
+            ))
             self.status.showMessage("Recibiendo datos…")
             return
 
-        # LED estado error
         if texto.startswith("[ERROR TX]"):
-            self.ledEstado.setStyleSheet("background-color: red; border-radius: 9px;")
+            self.ledEstado.setProperty("estado", "error")
+            self._refrescarEstiloWidget(self.ledEstado)
             self.status.showMessage(texto.strip())
 
         self.consola.insertPlainText(texto)
         self.consola.moveCursor(QTextCursor.MoveOperation.End)
 
-        # Si estamos grabando, escribir en el archivo
         if self.grabando and self.archivo_grabacion:
             self.archivo_grabacion.write(texto.encode("utf-8", errors="ignore"))
             self.archivo_grabacion.flush()
 
-
-    # ============================================================
-    # Grabación
-    # ============================================================
     def iniciarGrabacion(self):
-        nombre, _ = QFileDialog.getSaveFileName(
-            self,
-            "Seleccionar archivo de grabación",
-            "",
-            "Archivo de texto (*.txt)"
-        )
-
+        nombre, _ = QFileDialog.getSaveFileName(self, "Seleccionar archivo de grabación", "", "Archivo de texto (*.txt)")
         if not nombre:
             return
-
         try:
             self.archivo_grabacion = open(nombre, "wb")
             self.grabando = True
             self.status.showMessage(f"Grabando en: {nombre}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo abrir el archivo:\n{e}")
-
 
     def detenerGrabacion(self):
         if self.grabando:
@@ -332,27 +311,16 @@ class VentanaPrincipal(QMainWindow):
                 self.archivo_grabacion = None
             self.status.showMessage("Grabación detenida")
 
-
-    # ============================================================
-    # Guardar log
-    # ============================================================
     def guardarLog(self):
         nombre, _ = QFileDialog.getSaveFileName(self, "Guardar log", "", "Archivo de texto (*.txt)")
         if nombre:
             texto = self.consola.toPlainText()
-            datos = texto.encode("utf-8", errors="ignore")
-
             with open(nombre, "wb") as f:
-                f.write(datos)
-
+                f.write(texto.encode("utf-8", errors="ignore"))
             QMessageBox.information(self, "Guardado", "Log guardado correctamente.")
 
-    # ============================================================
-    # Enviar UART   
-    # ============================================================
     def enviar_uart(self):
         if not self.hilo:
             QMessageBox.warning(self, "Advertencia", "No hay conexión UART activa.")
             return
-        
         self.hilo.enviar_datos(self.input_tx.text())
