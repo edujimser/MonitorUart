@@ -1,0 +1,53 @@
+https://www.python.org/downloads/windows/ poner en el path
+
+-Monitor -->
+py -m pip install PyQt6
+py -m pip install pyserial
+
+-Ejecutable --> C:\Users\Eduar\Desktop\toolsSTM32>C:\Users\Eduar\AppData\Local\Programs\Python\Python313\Scripts\pyinstaller.exe --onefile --windowed --name MonitorUART monitor_uart.py
+
+⭐ Tabla completa de PySerial (propiedades + métodos)
+Nombre	Tipo	Descripción
+in_waiting	Propiedad	Número de bytes disponibles para leer en el buffer RX.
+out_waiting	Propiedad	Número de bytes pendientes de enviar en el buffer TX.
+is_open	Propiedad	Indica si el puerto está abierto (True) o cerrado (False).
+baudrate	Propiedad	Velocidad actual del puerto. Se puede leer o modificar.
+bytesize	Propiedad	Tamaño del byte (5, 6, 7, 8 bits). Normalmente 8 bits.
+parity	Propiedad	Paridad del puerto: N, E, O.
+stopbits	Propiedad	Bits de parada: 1, 1.5 o 2.
+timeout	Propiedad	Tiempo máximo de espera en lectura antes de devolver lo que haya.
+write_timeout	Propiedad	Tiempo máximo de espera al escribir.
+port	Propiedad	Nombre del puerto: "COM3", "COM5", etc.
+cts	Propiedad	Estado de la señal CTS (Clear To Send).
+dsr	Propiedad	Estado de la señal DSR (Data Set Ready).
+ri	Propiedad	Estado de la señal RI (Ring Indicator).
+cd	Propiedad	Estado de la señal CD (Carrier Detect).
+
+
+⭐ Métodos importantes
+Nombre	Tipo	Descripción
+read(size)	Método	Lee size bytes del buffer RX. Devuelve bytes.
+readline()	Método	Lee hasta encontrar \n. Útil para mensajes por líneas.
+read_until(delimiter)	Método	Lee hasta encontrar un delimitador específico.
+write(data)	Método	Envía bytes al dispositivo.
+flush()	Método	Fuerza el envío inmediato de datos pendientes.
+reset_input_buffer()	Método	Vacía el buffer RX. Útil para limpiar basura inicial.
+reset_output_buffer()	Método	Vacía el buffer TX.
+close()	Método	Cierra el puerto serie.
+open()	Método	Abre el puerto si estaba cerrado.
+get_settings()	Método	Devuelve un diccionario con toda la configuración del puerto.
+set_buffer_size(rx, tx)	Método	Cambia el tamaño del buffer RX/TX (solo Windows).
+cancel_read()	Método	Cancela una operación de lectura bloqueante.
+cancel_write()	Método	Cancela una operación de escritura bloqueante.
+
+
+⭐ Resumen profesional
+Función clave	Para qué sirve
+in_waiting	Saber si hay datos sin bloquear el hilo.
+read()	Leer bytes crudos del STM32.
+readline()	Leer mensajes terminados en \n.
+read_until()	Leer mensajes con delimitador.
+write()	Enviar comandos al STM32.
+reset_input_buffer()	Limpiar basura al conectar.
+timeout	Controlar bloqueos y fluidez del hilo.
+is_open	Detectar desconexión del dispositivo.

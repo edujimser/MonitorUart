@@ -1,0 +1,33 @@
+QTextEdit {
+    background-color: #0f0f0f;        /* Negro profundo */
+    color: #e0e0e0;                   /* Gris claro elegante */
+    font-family: Consolas, 'Fira Code', monospace;
+    font-size: 12pt;
+
+    border: 1px solid #2a2a2a;        /* Borde sutil */
+    border-radius: 6px;               /* Bordes suaves */
+    padding: 6px;
+}
+
+/* Scrollbar oscuro */
+QScrollBar:vertical {
+    background: #1a1a1a;
+    width: 12px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #3a3a3a;
+    min-height: 20px;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #505050;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    background: none;
+    height: 0;
+}

@@ -665,3 +665,201 @@ QScrollBar::add-page:vertical,
 QScrollBar::sub-page:vertical {
     background: none;
 }
+/* ============================================================ */
+/* v1.1 — PANEL LATERAL, CONSOLAS Y TERMINALES                  */
+/* ============================================================ */
+
+#tituloSeccion {
+    font-weight: bold;
+    font-size: 10pt;
+    color: rgb(65, 64, 59);
+    border-bottom: 1px solid rgb(200, 200, 200);
+    padding-bottom: 2px;
+}
+
+QScrollArea#panelLateral,
+QScrollArea#panelLateral > QWidget > QWidget {
+    background-color: #f0f0f0;
+}
+
+/* Barra de cada consola */
+#consolaTitulo {
+    font-weight: bold;
+    font-size: 11pt;
+    color: rgb(40, 40, 40);
+}
+
+#consolaContador {
+    font-size: 9pt;
+    color: #777777;
+}
+
+/* Texto de las consolas (QPlainTextEdit) */
+QPlainTextEdit#consolaTexto {
+    background-color: #0f0f0f;
+    color: #e0e0e0;
+    font-family: 'Fira Code', Consolas, 'Courier New', monospace;
+    font-size: 11pt;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    padding: 6px;
+    selection-background-color: #2b3e55;
+    selection-color: #ffffff;
+}
+
+QPlainTextEdit#consolaTexto:focus {
+    border: 1px solid #007acc;
+}
+
+/* Botones destacados */
+QPushButton#btnLimpiarTodo,
+QPushButton#btnLimpiarConsola {
+    color: rgb(150, 30, 30);
+    font-weight: bold;
+}
+
+QPushButton#btnPausa:checked {
+    background-color: #ffd54f;
+    border: 1px solid #c79a00;
+    font-weight: bold;
+}
+
+/* Lista del gestor de terminales */
+QListWidget#listaTerminales {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    font-family: 'Fira Code', Consolas, 'Courier New', monospace;
+    font-size: 10pt;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QListWidget#listaTerminales::item {
+    padding: 4px;
+}
+
+QListWidget#listaTerminales::item:selected {
+    background-color: #2b3e55;
+}
+
+/* Pestañas de consolas */
+QTabBar::tab {
+    padding: 5px 10px;
+    min-width: 70px;
+}
+
+QTabBar::tab:selected {
+    font-weight: bold;
+}
+
+/* ============================================================ */
+/* v1.2 — PANEL DE COMANDOS                                     */
+/* ============================================================ */
+
+QDockWidget {
+    font-weight: bold;
+}
+
+QDockWidget::title {
+    background-color: rgb(65, 64, 59);
+    color: rgb(223, 219, 210);
+    padding: 4px 6px;
+}
+
+QTreeWidget#arbolComandos {
+    background-color: #ffffff;
+    color: rgb(17, 17, 17);
+    font-weight: normal;
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 4px;
+}
+
+QTreeWidget#arbolComandos::item {
+    padding: 2px;
+}
+
+QTreeWidget#arbolComandos::item:selected {
+    background-color: rgb(246, 134, 86);
+    color: #ffffff;
+}
+
+QFrame#detalleComando {
+    background-color: #fafafa;
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 6px;
+    font-weight: normal;
+}
+
+#tituloComando {
+    font-weight: bold;
+    font-size: 11pt;
+    color: rgb(40, 40, 40);
+}
+
+#vistaComando {
+    font-family: 'Fira Code', Consolas, 'Courier New', monospace;
+    font-size: 10pt;
+    color: #addb67;
+    background-color: #0f0f0f;
+    border-radius: 4px;
+    padding: 6px;
+}
+
+QPushButton#btnEnviarComando {
+    font-weight: bold;
+    font-size: 11pt;
+    color: #ffffff;
+    border: 1px solid rgb(200, 70, 20);
+    border-radius: 6px;
+    background-color: qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 rgba(225, 108, 54, 255), stop:1 rgba(246, 134, 86, 255));
+}
+
+QPushButton#btnEnviarComando:hover {
+    background-color: rgb(236, 116, 64);
+}
+
+QPushButton#btnEnviarComando:disabled {
+    color: rgb(174, 167, 159);
+    border: 1px solid rgb(200, 200, 200);
+    background-color: rgb(230, 230, 230);
+}
+
+/* ============================================================ */
+/* v1.3 — FAVORITOS, REPETICIÓN Y CATEGORÍAS                    */
+/* ============================================================ */
+
+QToolButton#btnFavorito {
+    font-size: 15pt;
+    color: #e0a800;
+    border: none;
+    background: transparent;
+    padding: 0px 4px;
+}
+
+QToolButton#btnFavorito:hover {
+    color: #ffbf00;
+}
+
+QPushButton#btnRepetir:checked {
+    background-color: #ffd54f;
+    border: 1px solid #c79a00;
+    font-weight: bold;
+}
+
+QListWidget#listaCategorias {
+    background-color: #ffffff;
+    color: rgb(17, 17, 17);
+    font-size: 10pt;
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 4px;
+}
+
+QListWidget#listaCategorias::item {
+    padding: 4px;
+}
+
+QListWidget#listaCategorias::item:selected {
+    background-color: rgb(246, 134, 86);
+    color: #ffffff;
+}
